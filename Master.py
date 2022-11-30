@@ -10,18 +10,20 @@ import signal
 
 from rpyc.utils.server import ThreadedServer
 
+
 def int_handler(signal, frame):
-  pickle.dump((MasterService.exposed_Master.file_table),open('fs.img','wb'))
-  sys.exit(0)
+    pickle.dump((MasterService.exposed_Master.file_table),
+                open('fs.img', 'wb'))
+    sys.exit(0)
+
 
 class MasterService(rpyc.Service):
     class exposed_Master():
         file_table = {}
-        block_mapping = {}
+        # block_mapping = {}
         workers = {}
 
         block_size = 0
-        replication_factor = 2
         number_of_workers = 0
 
         def exposed_read(self, fname):
@@ -29,9 +31,6 @@ class MasterService(rpyc.Service):
             return mapping
 
         def exposed_write(self, dest, size):
-            # if self.exists(dest):
-            #     pass
-
             self.__class__.file_table[dest] = []
 
             self.set_block_size(size)
@@ -55,7 +54,7 @@ class MasterService(rpyc.Service):
             self.__class__.number_of_workers = W
             host = socket.gethostbyname(socket.gethostname())
             for i in range(1, W+1):
-                self.__class__.workers[i] = (host, 8887 + i)
+                self.__class__.workers[i] = (host, 8888 + i)
 
         def set_block_size(self, size):
             W = self.__class__.number_of_workers
@@ -70,20 +69,21 @@ class MasterService(rpyc.Service):
 
         def alloc_blocks(self, dest, num):
             blocks = []
+            nodes_list = list(self.__class__.workers.keys())
             for i in range(0, num):
                 block_uuid = uuid.uuid1()
-                nodes_ids = random.sample(
-                    self.__class__.workers.keys(), self.__class__.replication_factor)
-                blocks.append((block_uuid, nodes_ids))
+                nodes_id = nodes_list[i]
+                blocks.append((block_uuid, nodes_id))
 
-                self.__class__.file_table[dest].append((block_uuid, nodes_ids))
+                self.__class__.file_table[dest].append((block_uuid, nodes_id))
 
             return blocks
 
 
 if __name__ == "__main__":
     if os.path.isfile('fs.img'):
-      MasterService.exposed_Master.file_table= pickle.load(open('fs.img','rb'))
-    signal.signal(signal.SIGINT,int_handler)
+        MasterService.exposed_Master.file_table = pickle.load(
+            open('fs.img', 'rb'))
+    signal.signal(signal.SIGINT, int_handler)
     t = ThreadedServer(MasterService, port=2100)
     t.start()
