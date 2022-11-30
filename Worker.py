@@ -28,20 +28,32 @@ class WorkerService(rpyc.Service):
                 return f.read()
 
         def exposed_execute_mapred(self, block_uuid, worker, mapper, reducer):
-            self.execute_map(block_uuid, worker, mapper)
+            map_out = self.execute_map(block_uuid, worker, mapper)
             LOG.info("Mapper Job Done")
-            # self.execute_reduce(block_uuid, worker, reducer)
+            self.execute_reduce(block_uuid, worker, reducer, map_out)
+            LOG.info("Reducer Job Done")
 
         def execute_map(self, block_uuid, worker, mapper):
-            data = self.exposed_get(block_uuid)
-            map_res = subprocess.run(['echo', data, '|', 'python', mapper], shell=True)
+            data_file = self.get_file(block_uuid)
+            map_res = subprocess.run(['cat', data_file, '|', 'python', mapper], shell=True, capture_output=True, text=True)
+            LOG.info(map_res.stdout)
+            with open(DATA_DIR+str(block_uuid)+"map", 'w') as f:
+                f.write(map_res.stdout)
 
-        def execute_reduce(self, block_uuid, worker, reducer):
-            subprocess.run(['|', 'python', reducer])
+        def execute_reduce(self, block_uuid, worker, reducer, map_out):
+            data_file = self.get_file(str(block_uuid) + "map")
+            res = subprocess.run(['cat', data_file, '|', 'python', reducer], shell=True, capture_output=True, text=True)
+            LOG.info(res.stdout)
 
+        def get_file(self, block_uuid):
+            block_addr = DATA_DIR+str(block_uuid)
+            if not os.path.isfile(block_addr):
+                return None
+            else:
+                return block_addr
 
 if __name__ == "__main__":
     if not os.path.isdir(DATA_DIR):
         os.mkdir(DATA_DIR)
-    t = ThreadedServer(WorkerService, port=8888)
+    t = ThreadedServer(WorkerService, port=8890)
     t.start()

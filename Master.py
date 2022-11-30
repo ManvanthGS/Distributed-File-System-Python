@@ -53,7 +53,7 @@ class MasterService(rpyc.Service):
             self.__class__.number_of_workers = W
             host = socket.gethostbyname(socket.gethostname())
             for i in range(1, W+1):
-                self.__class__.workers[i] = (host, 8888)
+                self.__class__.workers[i] = (host, 8887 + i)
 
         def set_block_size(self, size):
             W = self.__class__.number_of_workers
