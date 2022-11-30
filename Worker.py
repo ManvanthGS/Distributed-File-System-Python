@@ -15,8 +15,8 @@ class WorkerService(rpyc.Service):
     class exposed_Worker():
         blocks = {}
 
-        def exposed_put(self, block_uuid, data, workers):
-            LOG.info("sent 1 " + str(block_uuid) + str(workers))
+        def exposed_put(self, block_uuid, data, worker):
+            LOG.info("sent 1 " + str(block_uuid) + str(worker))
             with open(DATA_DIR+str(block_uuid), 'w') as f:
                 f.write(data)
 
@@ -27,15 +27,17 @@ class WorkerService(rpyc.Service):
             with open(block_addr) as f:
                 return f.read()
 
-        def exposed_execute_mapred(self, data, block_uuid, workers):
-            self.execute_map(data, block_uuid, workers)
-            self.execute_reduce(data, block_uuid, workers)
+        def exposed_execute_mapred(self, block_uuid, worker, mapper, reducer):
+            self.execute_map(block_uuid, worker, mapper)
+            LOG.info("Mapper Job Done")
+            # self.execute_reduce(block_uuid, worker, reducer)
 
-        def execute_map(self, data, block_uuid, workers):
-            pass
+        def execute_map(self, block_uuid, worker, mapper):
+            data = self.exposed_get(block_uuid)
+            map_res = subprocess.run(['echo', data, '|', 'python', mapper], shell=True)
 
-        def execute_reduce(self, data, block_uuid, workers):
-            pass
+        def execute_reduce(self, block_uuid, worker, reducer):
+            subprocess.run(['|', 'python', reducer])
 
 
 if __name__ == "__main__":

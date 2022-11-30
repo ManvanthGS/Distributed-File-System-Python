@@ -20,7 +20,6 @@ def int_handler(signal, frame):
 class MasterService(rpyc.Service):
     class exposed_Master():
         file_table = {}
-        # block_mapping = {}
         workers = {}
 
         block_size = 0
@@ -54,7 +53,7 @@ class MasterService(rpyc.Service):
             self.__class__.number_of_workers = W
             host = socket.gethostbyname(socket.gethostname())
             for i in range(1, W+1):
-                self.__class__.workers[i] = (host, 8888 + i)
+                self.__class__.workers[i] = (host, 8888)
 
         def set_block_size(self, size):
             W = self.__class__.number_of_workers
@@ -63,9 +62,6 @@ class MasterService(rpyc.Service):
 
         def calc_num_blocks(self, size):
             return int(math.ceil(float(size)/self.__class__.block_size))
-
-        def exists(self, file):
-            return file in self.__class__.file_table
 
         def alloc_blocks(self, dest, num):
             blocks = []
@@ -78,7 +74,6 @@ class MasterService(rpyc.Service):
                 self.__class__.file_table[dest].append((block_uuid, nodes_id))
 
             return blocks
-
 
 if __name__ == "__main__":
     if os.path.isfile('fs.img'):

@@ -23,14 +23,12 @@ def read_from_worker(block_uuid, worker):
     return worker.get(block_uuid)
 
 
-def schedule_mapred(data, block_uuid, workers):
-    worker = workers[0]
-    workers = workers[1:]
+def schedule_mapred(block_uuid, worker, mapper, reducer):
     host, port = worker
 
     con = rpyc.connect(host, port=port)
     worker = con.root.Worker()
-    worker.execute_mapred(data, block_uuid, workers)
+    worker.execute_mapred(block_uuid, worker, mapper, reducer)
 
 
 def get(master, fname):
@@ -44,8 +42,6 @@ def get(master, fname):
         data = read_from_worker(block[0], worker)
         if data:
             sys.stdout.write(data)
-    # else:
-    #     LOG.info("No blocks found. Possibly a corrupt file")
 
 
 def put(master, source, dest):
@@ -66,13 +62,9 @@ def mapred(master, fname, mapper, reducer):
         return
 
     for block in file_table:
-        for m in [master.get_workers()[_] for _ in block[1]]:
-            data = read_from_worker(block[0], m)
-            if data:
-                schedule_mapred(data, block[0], block[1])
-                break
-        else:
-            LOG.info("No blocks found. Possibly a corrupt file")
+        worker = master.get_workers()[block[1]]
+        LOG.info("worker is : " + str(worker))
+        schedule_mapred(block[0], worker, mapper, reducer)
 
 
 def main(args, W):
