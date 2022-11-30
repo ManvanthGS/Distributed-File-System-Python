@@ -1,6 +1,7 @@
 import rpyc
 import os
 import logging
+import subprocess
 
 from rpyc.utils.server import ThreadedServer
 
@@ -38,12 +39,9 @@ class WorkerService(rpyc.Service):
             worker = con.root.Worker()
             worker.put(block_uuid, data, workers)
 
-        def delete_block(self, uuid):
-            pass
-
 
 if __name__ == "__main__":
     if not os.path.isdir(DATA_DIR):
         os.mkdir(DATA_DIR)
-    t = ThreadedServer(WorkerService, port=8888)
+    t = ThreadedServer(WorkerService, port=8890)
     t.start()

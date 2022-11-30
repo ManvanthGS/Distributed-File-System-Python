@@ -3,9 +3,16 @@ import uuid
 import math
 import random
 import socket
+import os
+import pickle
+import sys
+import signal
 
 from rpyc.utils.server import ThreadedServer
 
+def int_handler(signal, frame):
+  pickle.dump((MasterService.exposed_Master.file_table),open('fs.img','wb'))
+  sys.exit(0)
 
 class MasterService(rpyc.Service):
     class exposed_Master():
@@ -22,8 +29,8 @@ class MasterService(rpyc.Service):
             return mapping
 
         def exposed_write(self, dest, size):
-            if self.exists(dest):
-                pass
+            # if self.exists(dest):
+            #     pass
 
             self.__class__.file_table[dest] = []
 
@@ -75,5 +82,8 @@ class MasterService(rpyc.Service):
 
 
 if __name__ == "__main__":
+    if os.path.isfile('fs.img'):
+      MasterService.exposed_Master.file_table= pickle.load(open('fs.img','rb'))
+    signal.signal(signal.SIGINT,int_handler)
     t = ThreadedServer(MasterService, port=2100)
     t.start()
